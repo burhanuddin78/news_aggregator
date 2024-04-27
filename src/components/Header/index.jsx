@@ -16,6 +16,7 @@ import {
 	Select,
 	Popper,
 	Tooltip,
+	useMediaQuery,
 } from '@mui/material';
 import { Search as SearchIcon, ArrowDropDown as ArrowDropDownIcon, Clear as ClearIcon } from '@mui/icons-material';
 
@@ -39,10 +40,14 @@ const SearchBox = styled('div')(({ theme }) => ({
 	},
 }));
 
-const ToolbarCentered = styled(Toolbar)({
+const ToolbarCentered = styled(Toolbar)(({ theme }) => ({
 	display: 'flex',
 	justifyContent: 'center',
-});
+
+	[theme.breakpoints.down('sm')]: {
+		flexDirection:"column",
+	},
+}));
 const SearchIconWrapper = styled('div')(({ theme }) => ({
 	padding: theme.spacing(0, 1),
 }));
@@ -111,14 +116,14 @@ const Row = styled(Box)(({ theme }) => ({
 	alignItems: 'center',
 	justifyContent: 'space-between',
 	width: '100%',
-	marginBottom: '2em',
+	marginBottom: '.5em',
 }));
 const LastRow = styled(Box)(({ theme }) => ({
 	display: 'flex',
 	alignItems: 'center',
 	justifyContent: 'flex-end',
 	width: '100%',
-	marginTop: '1em',
+	marginTop: '.5em',
 }));
 
 const TextFieldWhite = styled(TextField)({
@@ -142,7 +147,7 @@ const TypographyWhite = styled(Typography)({
 	marginRight: '.6rem',
 	minWidth: '100px',
 	color: '#bdc1c6',
-	fontSize: '1.1em',
+	fontSize: '.8em',
 });
 
 export default function Header({ fetchDataAsync }) {
@@ -152,8 +157,12 @@ export default function Header({ fetchDataAsync }) {
 	const [popperAnchorEl, setPopperAnchorEl] = useState(null);
 	const [search, setSearch] = useState('');
 	const [keywords, setKeywords] = useState('');
+	const [author, setAuthor] = useState('');
 	const [dateValue, setDateValue] = useState('');
 	const popperRef = useRef(null);
+
+	const mobileScreen = useMediaQuery('(max-width:600px)');
+
 
 	// ****************** Handlers **************************
 
@@ -169,14 +178,14 @@ export default function Header({ fetchDataAsync }) {
 
 	const handleClearClick = () => {
 		setSearch('');
-		fetchDataAsync(selectedTab, null, null, null);
+		fetchDataAsync(selectedTab, null, null, null, null);
 	};
 
 	// Handler for tab selection
 	const handleTabSelect = (e, newValue) => {
 		setSelectedTab(newValue);
 		handleClearFilters();
-		fetchDataAsync(newValue, null, null, null);
+		fetchDataAsync(newValue, null, null, null, null);
 	};
 
 	// Handler for search input change
@@ -187,7 +196,7 @@ export default function Header({ fetchDataAsync }) {
 	};
 
 	const handleSearchClick = () => {
-		fetchDataAsync(selectedTab, search, keywords, dateValue);
+		fetchDataAsync(selectedTab, search, keywords, dateValue, author);
 	};
 
 	const handlekeywordChange = (event) => {
@@ -201,6 +210,7 @@ export default function Header({ fetchDataAsync }) {
 		setSearch('');
 		setDateValue('');
 		setKeywords('');
+		setAuthor('');
 	};
 
 	// *******************************************
@@ -220,7 +230,7 @@ export default function Header({ fetchDataAsync }) {
 
 	useEffect(() => {
 		const timeout = setTimeout(async () => {
-			await fetchDataAsync(selectedTab, search, keywords, dateValue);
+			await fetchDataAsync(selectedTab, search, keywords, dateValue,  author);
 		}, 500);
 
 		// if this effect run again, because `value` changed, we remove the previous timeout
@@ -287,6 +297,16 @@ export default function Header({ fetchDataAsync }) {
 								/>
 							</Row>
 							<Row>
+								<TypographyWhite>Author</TypographyWhite>
+								<TextFieldWhite
+									sx={{ width: '100%' }}
+									variant='standard'
+									value={author}
+									placeholder='author name'
+									onChange={(e) => setAuthor(e.target.value)}
+								/>
+							</Row>
+							<Row>
 								<TypographyWhite>Date</TypographyWhite>
 								<Select
 									variant='standard'
@@ -327,6 +347,7 @@ export default function Header({ fetchDataAsync }) {
 					scrollButtons
 					disableRipple
 					disableFocusRipple
+					variant={mobileScreen ? "scrollable" : "standard"}
 					centered>
 					<Tab
 						value={0}

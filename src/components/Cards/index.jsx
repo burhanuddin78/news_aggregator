@@ -82,27 +82,39 @@ const calculateTimeDifference = (publishTime) => {
 	// Calculate the difference in milliseconds
 	const difference = currentDate - publishDate;
 
-	// Convert difference to minutes and hours
+	// Convert difference to minutes, hours, days, months, and years
 	const minutes = Math.floor((difference / (1000 * 60)) % 60);
 	const hours = Math.floor((difference / (1000 * 60 * 60)) % 24);
+	const days = Math.floor(difference / (1000 * 60 * 60 * 24));
+	const months = Math.floor(days / 30);
+	const years = Math.floor(months / 12);
 
 	let timeString = '';
 
+	if (years > 0) {
+			timeString += years + (years === 1 ? ' year ' : ' years ');
+	}
+	if (months > 0) {
+			timeString += months + (months === 1 ? ' month ' : ' months ');
+	}
+	if (days > 0) {
+			timeString += days + (days === 1 ? ' day ' : ' days ');
+	}
 	if (hours > 0) {
-		timeString += hours + (hours === 1 ? ' hour ' : ' hours ');
+			timeString += hours + (hours === 1 ? ' hour ' : ' hours ');
 	}
 	if (minutes > 0) {
-		timeString += minutes + (minutes === 1 ? ' minute' : ' minutes');
+			timeString += minutes + (minutes === 1 ? ' minute' : ' minutes');
 	}
 
 	return timeString.trim();
-};
+}
 
 const handleButtonClick = (source) => {
 	window.open(source, '_blank');
 };
 //*****************************  ***********************************/
-const NewsCard = ({ coverImage, url, title, description, source, publishedAt, index }) => {
+const NewsCard = ({ coverImage, url, title, description, source, publishedAt, author, index }) => {
 	// jsx rendering
 	return (
 		<StyledCard
@@ -137,7 +149,12 @@ const NewsCard = ({ coverImage, url, title, description, source, publishedAt, in
 					<Grid
 						item
 						xs={12}>
-						<StyledTypography variant='body2'>{source}</StyledTypography>
+						<StyledTypography variant='body2'>author: {author || 'Unknown'}</StyledTypography>
+					</Grid>
+					<Grid
+						item
+						xs={12}>
+						<StyledTypography variant='body2'>source: {source || 'Unknown'}</StyledTypography>
 					</Grid>
 					<Grid
 						item

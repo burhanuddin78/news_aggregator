@@ -7,10 +7,10 @@ const NEWS_API_KEY = 'afc35e6b0b8747dc93a0831f800e2dc4';
 const NEWS_API_ENDPOINT = `https://newsapi.org/v2/everything?apiKey=${NEWS_API_KEY}&sortBy=publishedAt`;
 
 const GUARDIAN_API_KEY = 'test';
-const GUARDIAN_API_ENDPOINT = `https://content.guardianapis.com/search?api-key=${GUARDIAN_API_KEY}&show-fields=webTitle,fields,headline,webUrl,webPublicationDate`;
+const GUARDIAN_API_ENDPOINT = `https://content.guardianapis.com/search?api-key=${GUARDIAN_API_KEY}&show-fields=webTitle,fields,headline,webUrl,webPublicationDates&show-tags=contributor&show-fields=thumbnail`;
 
 const NY_API_KEY = 'Q1xTwVsLUqLLHK46WLC5FVDilb8CwE9d';
-const NY_API_ENDPOINT = `https://api.nytimes.com/svc/search/v2/articlesearch.json?api-key=${NY_API_KEY}&sort=newest&fl=headline,lead_paragraph,multimedia,pub_date,web_url,source`;
+const NY_API_ENDPOINT = `https://api.nytimes.com/svc/search/v2/articlesearch.json?api-key=${NY_API_KEY}&sort=newest&fl=source,headline,lead_paragraph,multimedia,pub_date,web_url,byline`;
 
 // Mapping of tabs to categories
 const tabs = {
@@ -63,7 +63,7 @@ const getDates = (dateOption) => {
 };
 
 // Function to construct search parameters for APIs
-const getSearchParams = (tab, search, keyword, dateOption) => {
+const getSearchParams = (tab, search, keyword, dateOption, author) => {
 	let tabKeyword = tabs[tab];
 	let queryString = `${tabKeyword}`;
 
@@ -76,33 +76,53 @@ const getSearchParams = (tab, search, keyword, dateOption) => {
 		queryString += ` OR ${keyword}`;
 	}
 
-	let queryString1 = `q=${encodeURIComponent(queryString)}`;
-	let queryString2 = `q=${encodeURIComponent(queryString)}`;
-	let queryString3 = `q=${encodeURIComponent(queryString)}`;
+	let queryString1 = `${(queryString)}`;
+	let queryString2 = `${(queryString)}`;
+	let queryString3 = `${(queryString)}`;
+
+	if (author) {
+		queryString1 = `${queryString1} AND ${author}`;
+		queryString2 = `${queryString1} AND ${author}`;
+		queryString2 = `${queryString1}&fq:line=${author}`;
+	}
+
+	 queryString1 = `q=${encodeURIComponent(queryString)}`;
+	 queryString2 = `q=${encodeURIComponent(queryString)}`;
+	 queryString3 = `fq=${encodeURIComponent(queryString)}`;
 
 	if (dateOption) {
 		const { start, end } = getDates(dateOption);
+
+		let startDateWithoutTime = new Date(start)?.toISOString()?.split('T')[0]
+		let endDateWithoutTime = new Date(end)?.toISOString()?.split('T')[0] 
+		
+		let formattedStartDate = new Date(start).toISOString().split("T")[0].replaceAll('-','')
+		let formattedEndtDate = new Date(end).toISOString().split("T")[0].replaceAll('-','')
+
 		queryString1 = `${queryString1}&from=${start}&to=${end}`;
-		queryString2 = `${queryString1}&from-date=${start}&to-date=${end}`;
-		queryString3 = `${queryString1}&begin_date=${start}&end_date=${end}`;
+		queryString2 = `${queryString2}&from-date=${startDateWithoutTime}&to-date=${endDateWithoutTime}`;
+		queryString3 = `${queryString3}&begin_date=${formattedStartDate}&end_date=${formattedEndtDate}`;
 	}
 
 	return { queryString1, queryString2, queryString3 };
 };
 
 // Function to fetch news from multiple APIs
-export const fetchNews = async (tab = 0, search = '', keyword = '', dateOption = null) => {
+export const fetchNews = async (tab = 0, search = '', keyword = '', dateOption = null, author = null) => {
 	try {
 		// Get search parameters
-		const { queryString1, queryString2, queryString3 } = getSearchParams(tab, search, keyword, dateOption);
+		const { queryString1, queryString2, queryString3 } = getSearchParams(tab, search, keyword, dateOption,  author);
 
 		// Construct API URLs
 		const API_URL_1 = `${NEWS_API_ENDPOINT}&${queryString1}`;
-		const API_URL_2 = `${GUARDIAN_API_ENDPOINT}&${queryString2}&show-fields=thumbnail`;
+		const API_URL_2 = `${GUARDIAN_API_ENDPOINT}&${queryString2}`;
 		const API_URL_3 = `${NY_API_ENDPOINT}&${queryString3}`;
 
 		// Fetch data from all APIs concurrently
-		const responses = await Promise.allSettled([axios.get(API_URL_1), axios.get(API_URL_2), axios.get(API_URL_3)]);
+		const responses = await Promise.allSettled(
+			[
+				// axios.get(API_URL_1),
+				 axios.get(API_URL_2), axios.get(API_URL_3)]);
 		const successfulResponses = responses.filter((response) => response.status === 'fulfilled');
 
 		if (successfulResponses.length === 0) {
@@ -132,18 +152,27 @@ const mergeNews = (responses) => {
 				coverImage: article.urlToImage,
 				publishedAt: article.publishedAt,
 				url: article.url,
-				source: 'News Org',
+				source: article?.source?.name || '',
+				author: article.author,
 			}));
 		} else if (response.value.data.response.results) {
 			// Guardian API response
-			data = response.value.data.response.results.map((result) => ({
-				title: result.webTitle,
-				description: result.webTitle,
-				coverImage: result?.fields?.thumbnail || '',
-				publishedAt: result.webPublicationDate,
-				url: result.webUrl,
-				source: 'Guardian News',
-			}));
+			data = response.value.data.response.results.map((result) => {
+        let author = "Unknown";
+        const contributorTag = result?.tags?.find((tag) => tag.type === "contributor");
+        if (contributorTag) {
+          author = contributorTag.webTitle;
+        }
+        return {
+          title: result.webTitle,
+          description: result.webTitle,
+          coverImage: result?.fields?.thumbnail || "",
+          publishedAt: result.webPublicationDate,
+          url: result.webUrl,
+          source: "Guardian News",
+          author: author,
+        };
+      });
 		} else if (response.value.data.response.docs) {
 			// New York Times API response
 			data = response.value.data.response.docs.map((doc) => ({
@@ -153,6 +182,7 @@ const mergeNews = (responses) => {
 				publishedAt: doc.pub_date,
 				url: doc.web_url,
 				source: doc.source,
+				author: doc.byline?.original,
 			}));
 		}
 

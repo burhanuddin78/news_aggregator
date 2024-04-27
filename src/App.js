@@ -12,10 +12,10 @@ const App = () => {
 		fetchDataAsync();
 	}, []);
 
-	const fetchDataAsync = async (tab, search, keyword, dateOption) => {
+	const fetchDataAsync = async (tab, search, keyword, dateOption, source) => {
 		setLoading(true);
 		setData([]);
-		const fetchedData = await fetchNews(tab, search, keyword, dateOption);
+		const fetchedData = await fetchNews(tab, search, keyword, dateOption, source);
 		setData(fetchedData);
 		setLoading(false);
 	};
