@@ -10,6 +10,9 @@ COPY package*.json ./
 # Install dependencies
 RUN npm install
 
+# Install serve to serve the app on development
+RUN npm install -g serve
+
 # Copy the rest of the application code to the container
 COPY . .
 
@@ -20,4 +23,4 @@ RUN npm run build
 EXPOSE 3000
 
 # Command to run the React app
-CMD ["npm", "start"]
+CMD ["serve", "-s", "build", "-l", "3000"]
