@@ -76,9 +76,9 @@ const getSearchParams = (tab, search, keyword, dateOption, author) => {
 		queryString += ` OR ${keyword}`;
 	}
 
-	let queryString1 = `${(queryString)}`;
-	let queryString2 = `${(queryString)}`;
-	let queryString3 = `${(queryString)}`;
+	let queryString1 = `${queryString}`;
+	let queryString2 = `${queryString}`;
+	let queryString3 = `${queryString}`;
 
 	if (author) {
 		queryString1 = `${queryString1} AND ${author}`;
@@ -86,18 +86,18 @@ const getSearchParams = (tab, search, keyword, dateOption, author) => {
 		queryString2 = `${queryString1}&fq:line=${author}`;
 	}
 
-	 queryString1 = `q=${encodeURIComponent(queryString)}`;
-	 queryString2 = `q=${encodeURIComponent(queryString)}`;
-	 queryString3 = `fq=${encodeURIComponent(queryString)}`;
+	queryString1 = `q=${encodeURIComponent(queryString)}`;
+	queryString2 = `q=${encodeURIComponent(queryString)}`;
+	queryString3 = `fq=${encodeURIComponent(queryString)}`;
 
 	if (dateOption) {
 		const { start, end } = getDates(dateOption);
 
-		let startDateWithoutTime = new Date(start)?.toISOString()?.split('T')[0]
-		let endDateWithoutTime = new Date(end)?.toISOString()?.split('T')[0] 
-		
-		let formattedStartDate = new Date(start).toISOString().split("T")[0].replaceAll('-','')
-		let formattedEndtDate = new Date(end).toISOString().split("T")[0].replaceAll('-','')
+		let startDateWithoutTime = new Date(start)?.toISOString()?.split('T')[0];
+		let endDateWithoutTime = new Date(end)?.toISOString()?.split('T')[0];
+
+		let formattedStartDate = new Date(start).toISOString().split('T')[0].replaceAll('-', '');
+		let formattedEndtDate = new Date(end).toISOString().split('T')[0].replaceAll('-', '');
 
 		queryString1 = `${queryString1}&from=${start}&to=${end}`;
 		queryString2 = `${queryString2}&from-date=${startDateWithoutTime}&to-date=${endDateWithoutTime}`;
@@ -111,7 +111,7 @@ const getSearchParams = (tab, search, keyword, dateOption, author) => {
 export const fetchNews = async (tab = 0, search = '', keyword = '', dateOption = null, author = null) => {
 	try {
 		// Get search parameters
-		const { queryString1, queryString2, queryString3 } = getSearchParams(tab, search, keyword, dateOption,  author);
+		const { queryString1, queryString2, queryString3 } = getSearchParams(tab, search, keyword, dateOption, author);
 
 		// Construct API URLs
 		const API_URL_1 = `${NEWS_API_ENDPOINT}&${queryString1}`;
@@ -119,10 +119,7 @@ export const fetchNews = async (tab = 0, search = '', keyword = '', dateOption =
 		const API_URL_3 = `${NY_API_ENDPOINT}&${queryString3}`;
 
 		// Fetch data from all APIs concurrently
-		const responses = await Promise.allSettled(
-			[
-				// axios.get(API_URL_1),
-				 axios.get(API_URL_2), axios.get(API_URL_3)]);
+		const responses = await Promise.allSettled([axios.get(API_URL_1), axios.get(API_URL_2), axios.get(API_URL_3)]);
 		const successfulResponses = responses.filter((response) => response.status === 'fulfilled');
 
 		if (successfulResponses.length === 0) {
@@ -158,21 +155,21 @@ const mergeNews = (responses) => {
 		} else if (response.value.data.response.results) {
 			// Guardian API response
 			data = response.value.data.response.results.map((result) => {
-        let author = "Unknown";
-        const contributorTag = result?.tags?.find((tag) => tag.type === "contributor");
-        if (contributorTag) {
-          author = contributorTag.webTitle;
-        }
-        return {
-          title: result.webTitle,
-          description: result.webTitle,
-          coverImage: result?.fields?.thumbnail || "",
-          publishedAt: result.webPublicationDate,
-          url: result.webUrl,
-          source: "Guardian News",
-          author: author,
-        };
-      });
+				let author = 'Unknown';
+				const contributorTag = result?.tags?.find((tag) => tag.type === 'contributor');
+				if (contributorTag) {
+					author = contributorTag.webTitle;
+				}
+				return {
+					title: result.webTitle,
+					description: result.webTitle,
+					coverImage: result?.fields?.thumbnail || '',
+					publishedAt: result.webPublicationDate,
+					url: result.webUrl,
+					source: 'Guardian News',
+					author: author,
+				};
+			});
 		} else if (response.value.data.response.docs) {
 			// New York Times API response
 			data = response.value.data.response.docs.map((doc) => ({
